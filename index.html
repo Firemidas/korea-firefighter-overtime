@@ -29,7 +29,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin:4px 
 header h1{font-size:17px;margin:0;font-weight:800;display:flex;align-items:center;gap:6px}
 header h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
 .teamtag{font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);padding:4px 8px;border-radius:999px}
-.actions{display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px;margin-bottom:10px}
+.actions{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px;margin-bottom:10px}
 .actions .btn{padding:12px 6px;font-size:14px}
 .st-hero{margin:10px 0 4px}
 .st-hero .lbl{font-size:12px;color:var(--sub)}
@@ -163,6 +163,11 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
 .c-duty{background:#ccfbf1;color:#0f766e}
 .memo{min-height:72px;font-family:inherit;font-size:15px;line-height:1.5;resize:vertical}
 .c-memo{background:#fef9c3;color:#854d0e}
+.c-sortie{background:#ffedd5;color:#c2410c}
+.sumhero{background:var(--red-soft,#fdecea);border-radius:16px;padding:16px;margin-top:6px}
+.sumhero .lbl{font-size:13px;color:var(--sub)}
+.sumhero .big{font-size:30px;font-weight:800;color:var(--red);margin-top:2px}
+.sumhero .subl{font-size:12px;color:var(--sub);margin-top:4px}
 .add.duty{color:#0f766e}
 .trform{display:none;border:1px solid var(--line);border-radius:12px;padding:4px 12px;margin-top:8px;background:#fafbfc}
 .trform.show{display:block}
@@ -206,9 +211,9 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
       통계
     </button>
-    <button class="btn primary" id="btnCalc">
+    <button class="btn" id="btnCalc">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M14 10h2M8 14h2M14 14h2M8 18h2M14 18h2"/></svg>
-      <span id="calcLabel">예상 수당 확인</span>
+      <span>예상 수당 확인</span>
     </button>
   </div>
 
@@ -231,15 +236,10 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     <span><i style="background:#e5e7eb"></i>휴가</span>
     <span><i style="background:var(--rose-soft)"></i>조퇴·지각·외출</span>
     <span><i style="background:#ccfbf1"></i>당직</span>
+    <span><i style="background:#ffedd5"></i>간식비·출동가산금</span>
     <span><i style="background:#fef9c3"></i>메모</span>
   </div>
 
-  <div class="mini">
-    <div><div class="lbl">이번 달 예상 (세전)</div><div class="val" id="miniTotal">-</div></div>
-    <div style="text-align:right"><div class="lbl" id="miniHoursLbl">시간외 · 야간 · 휴일</div><div style="font-weight:700" id="miniHours">-</div></div>
-  </div>
-
-  <p class="note">날짜를 누르면 복무 상황(초과근무·출장·교육·휴가·조퇴·지각·외출)을 입력할 수 있어요. 입력 내용은 이 기기의 브라우저에만 저장됩니다. 계산 결과는 참고용이며, 실제 지급액은 e-사람 확정 실적과 보수명세서를 기준으로 하세요.</p>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -289,6 +289,10 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   </div>
   <div class="picker" id="extraPicker"></div>
   <div id="items" style="margin-top:12px"></div>
+  <h3>출동 수당</h3>
+  <div class="row"><label class="chk"><input type="checkbox" id="snackChk"> 야간출동간식비</label><span class="hint" style="font-size:12px;color:var(--sub)">5,000원</span></div>
+  <div class="row"><label>출동가산금<span class="hint">3건 공제 후 지급받는 출동건수</span></label>
+    <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub)"><input type="number" id="sortieN" min="0" step="1" inputmode="numeric" placeholder="0" style="width:80px;text-align:right;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:16px"> 건 × 4,000원</span></div>
   <h3>메모</h3>
   <textarea id="dayMemo" class="memo" placeholder="개인 메모 (예: 화재 출동, 교육 준비물 등)" maxlength="500"></textarea>
   <div class="okbar"><button class="btn" id="dayCancel">취소</button><button class="btn primary" id="dayOk">확인</button></div>
@@ -469,6 +473,7 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   const IL_LEAVE_KINDS = ['연가','당직휴무','병가','공가','특별휴가'];
   const LEAVE_PARTS = {full:'전일', day:'주간', night:'야간', am:'오전반차', pm:'오후반차'};
   const IL_CAP_H = 57, IL_FIXED_H = 10, IL_FIXED_DAYS = 15;
+  const SNACK_WON = 5000, SORTIE_WON = 4000; // 야간출동간식비(1일), 출동가산금(1건)
 
   const DEFAULT = { settings:{pattern:'dbh', team:1, anchorDate:'2026-10-21', anchorState:'D', rank:'소방장',
     fixedOn:'1', dutyWS:60000, dutyHI:60000, dutyHS:60000}, days:{} };
@@ -561,7 +566,7 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   const dayData = k => state.days[k] || (state.days[k] = {items:[]});
   function cleanup(k){
     const d = state.days[k]; if (!d) return;
-    if (!d.items.length && !(d.memo||'').trim() && (!d.shift || d.shift==='auto') && (d.hol===undefined || d.hol==='auto')) delete state.days[k];
+    if (!d.items.length && !(d.memo||'').trim() && !d.snack && !d.sortie && (!d.shift || d.shift==='auto') && (d.hol===undefined || d.hol==='auto')) delete state.days[k];
   }
   // 조퇴·지각·외출 구간 (분). 근무 시작 전 시각은 다음 날로 봄
   function awayRange(it, sh){
@@ -660,8 +665,10 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     const last = new Date(y,m+1,0).getDate();
     const r = {work:0, night:0, holDays:0, weekdays:0, duty:0, extraMin:0, awayMin:0, leaveMin:0, substMin:0, commonMin:0,
                ilDays:0, ilMin:0, attend:0, dutyC:{WS:0, HI:0, HS:0}, shiftDays:0};
+    r.snackDays = 0; r.sortieN = 0;
     for (let d=1; d<=last; d++){
-      const k = key(y,m,d), e = evalDay(k);
+      const k = key(y,m,d), e = evalDay(k), dd = state.days[k];
+      if (dd){ if (dd.snack) r.snackDays++; r.sortieN += num(dd.sortie); }
       if (e.il){
         r.ilDays++; r.ilMin += e.ilMin; r.attend += e.attend;
         for (const c in e.dutyC) r.dutyC[c] += e.dutyC[c];
@@ -685,7 +692,8 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     const R = ratesFor(y, rankOf(key(y,m,1))); r.R = R; // 그 달 1일 계급 기준
     r.pDuty = r.dutyC.WS*num(s.dutyWS) + r.dutyC.HI*num(s.dutyHI) + r.dutyC.HS*num(s.dutyHS);
     r.dutyN = r.dutyC.WS + r.dutyC.HI + r.dutyC.HS;
-    r.pOT = r.ot*R.ot; r.pN = r.nightH*R.night; r.pH = r.holDays*R.hol; r.total = r.pOT + r.pN + r.pH + r.pDuty;
+    r.pOT = r.ot*R.ot; r.pN = r.nightH*R.night; r.pH = r.holDays*R.hol; r.pSnack = r.snackDays*SNACK_WON; r.pSortie = r.sortieN*SORTIE_WON;
+    r.total = r.pOT + r.pN + r.pH + r.pDuty + r.pSnack + r.pSortie;
     return r;
   }
 
@@ -704,7 +712,6 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     const s = state.settings, tk = key(now.getFullYear(), now.getMonth(), now.getDate()), cn = cfgOf(tk);
     $('#teamTag').textContent = `${PATTERNS[cn.pattern].name}${PATTERNS[cn.pattern].il ? '' : ` ${cn.team}팀`} · ${rankOf(tk)}`;
     $('#monthLabel').innerHTML = `${viewY}년 ${viewM+1}월 <span class="caret">▾</span>`;
-    $('#calcLabel').textContent = `${viewM+1}월 예상 수당 확인`;
     const g = $('#grid'); g.innerHTML = '';
     const first = new Date(viewY, viewM, 1);
     const start = new Date(first); start.setDate(1 - first.getDay());
@@ -728,6 +735,9 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
           html += `<span class="shift ${cls}${e.voidShift?' void':''}">${S.name}</span>`;
         }
         for (const it of items(k)) html += `<span class="chip ${ITEM_STYLE[it.type].cls}">${chipLabel(it, k)}</span>`;
+        const dd = state.days[k];
+        if (dd?.snack) html += `<span class="chip c-sortie">간식비</span>`;
+        if (dd?.sortie) html += `<span class="chip c-sortie">출동 ${dd.sortie}건</span>`;
         const memo = (state.days[k]?.memo || '').trim();
         if (memo) html += `<span class="chip c-memo">✎ ${memo.replace(/[<>&]/g,'').slice(0,12)}</span>`;
         b.addEventListener('click', () => openDay(k));
@@ -735,10 +745,6 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
       b.innerHTML = html;
       g.appendChild(b);
     }
-    const r = calcMonth(viewY, viewM);
-    $('#miniTotal').textContent = won(r.total);
-    $('#miniHours').textContent = r.shiftDays ? `${r.ot}h · ${r.nightH}h · ${r.holDays}일` : `시간외 ${r.ot}h · 당직 ${r.dutyN}회`;
-    $('#miniHoursLbl').textContent = r.shiftDays ? '시간외 · 야간 · 휴일' : '일근';
   }
 
   // ===== 시트 공통 =====
@@ -795,6 +801,8 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     openSheet('#daySheet');
     dayBackup = state.days[k] ? JSON.stringify(state.days[k]) : null; dirty = false;
     $('#dayMemo').value = state.days[k]?.memo || '';
+    $('#snackChk').checked = !!state.days[k]?.snack;
+    $('#sortieN').value = state.days[k]?.sortie || '';
     $('#dayOk').classList.remove('hot');
     renderItems();
   }
@@ -811,6 +819,8 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     closeSheet(); render(); if (was) toast('저장했어요');
   });
   $('#dayMemo').addEventListener('input', e => { dayData(curDate).memo = e.target.value; dsave(); });
+  $('#snackChk').addEventListener('change', e => { dayData(curDate).snack = e.target.checked; dsave(); });
+  $('#sortieN').addEventListener('input', e => { dayData(curDate).sortie = Math.max(0, Math.floor(num(e.target.value))); dsave(); });
   $('#dayCancel').addEventListener('click', () => { closeSheet(); render(); });
   $('#addExtra').addEventListener('click', () => $('#extraPicker').classList.toggle('show'));
   $('#extraPicker').addEventListener('click', e => {
@@ -1058,29 +1068,32 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     let detail = `근무 ${r.duty}회 · 공동근무 ${hm(r.commonMin)} · 초과 ${hm(r.extraMin)} · 출장·교육 ${hm(r.substMin)}`;
     if (r.leaveMin) detail += ` · 연가 −${hm(r.leaveMin)}`;
     if (r.awayMin) detail += ` · 조퇴·지각·외출 −${hm(r.awayMin)}`;
-    let html = '';
+    let html = `<div class="sumhero"><div class="lbl">${viewM+1}월 예상 수당 (세전)</div><div class="big">${won(r.total)}</div>
+      <div class="subl">${r.shiftDays ? `시간외 ${r.ot}시간 · 야간 ${r.nightH}시간 · 휴일 ${r.holDays}일` : `시간외 ${r.ot}시간`}${r.dutyN ? ` · 당직 ${r.dutyN}회` : ''}${r.snackDays ? ` · 간식비 ${r.snackDays}일` : ''}${r.sortieN ? ` · 출동가산 ${r.sortieN}건` : ''}</div></div>`;
+    html += `<h3 style="font-size:14px;color:var(--sub);margin:16px 0 6px">수당별 금액</h3><div class="sumbox">
+      <div class="sumrow"><span class="k">시간외근무수당</span><span class="v">${won(r.pOT)}<small>${hrs(r.ot)}h × ${won(R.ot)}</small></span></div>
+      ${r.shiftDays ? `<div class="sumrow"><span class="k">야간근무수당</span><span class="v">${won(r.pN)}<small>${hrs(r.nightH)}h × ${won(R.night)}</small></span></div>
+      <div class="sumrow"><span class="k">휴일근무수당</span><span class="v">${won(r.pH)}<small>${r.holDays}일 × ${won(R.hol)}</small></span></div>` : ''}
+      ${r.dutyN ? `<div class="sumrow"><span class="k">당직비</span><span class="v">${won(r.pDuty)}<small>${r.dutyN}회</small></span></div>` : ''}
+      ${r.snackDays ? `<div class="sumrow"><span class="k">야간출동간식비</span><span class="v">${won(r.pSnack)}<small>${r.snackDays}일 × ${won(SNACK_WON)}</small></span></div>` : ''}
+      ${r.sortieN ? `<div class="sumrow"><span class="k">출동가산금</span><span class="v">${won(r.pSortie)}<small>${r.sortieN}건 × ${won(SORTIE_WON)}</small></span></div>` : ''}
+      <div class="total"><span style="font-weight:700">합계 (세전)</span><span class="v">${won(r.total)}</span></div>
+    </div>`;
     if (r.ilDays){
-      html += `<div class="sumbox">
+      html += `<h3 style="font-size:14px;color:var(--sub);margin:16px 0 6px">근무시간 세부내역</h3><div class="sumbox">
         <div class="sumrow"><span class="k">일근 초과근무 실적</span><span class="v">${hmKo(r.ilMin)}</span></div>
         <div class="sumrow"><span class="k">정액분</span><span class="v">${r.fixedMin ? '10시간' : '없음'}<small>출근 ${r.attend}일${state.settings.fixedOn==='0' ? ' · 설정에서 제외' : ` (${IL_FIXED_DAYS}일 이상 시 10시간)`}</small></span></div>
         <div class="sumrow" style="border-top:1px solid var(--line);margin-top:4px;padding-top:10px"><span class="k">일근 시간외</span><span class="v">${r.ilH}시간<small>${r.ilRawH > IL_CAP_H ? `${r.ilRawH}시간 → 월 ${IL_CAP_H}시간 상한` : '1시간 미만 절삭'}</small></span></div>
         <div class="sumrow"><span class="k">당직</span><span class="v">${r.dutyN}회<small>평일 숙직 ${r.dutyC.WS} · 휴일 일직 ${r.dutyC.HI} · 휴일 숙직 ${r.dutyC.HS}</small></span></div>
       </div>`;
     }
-    if (r.shiftDays) html += `<div class="sumbox" style="margin-top:10px">
+    if (r.shiftDays) html += `${r.ilDays ? '' : '<h3 style="font-size:14px;color:var(--sub);margin:16px 0 6px">근무시간 세부내역</h3>'}<div class="sumbox" style="margin-top:${r.ilDays?10:0}px">
       <div class="sumrow"><span class="k">총 근무시간</span><span class="v">${hmKo(r.work)}<small>${detail}</small></span></div>
       <div class="sumrow"><span class="k">정규 근무 차감</span><span class="v">−${hmKo(r.reg)}<small>평일 ${r.weekdays}일 × 8h</small></span></div>
       <div class="sumrow"><span class="k">휴일 근무 차감</span><span class="v">−${hmKo(r.holDeduct)}<small>휴일수당 ${r.holDays}일 × 8h</small></span></div>
       <div class="sumrow" style="border-top:1px solid var(--line);margin-top:4px;padding-top:10px"><span class="k">시간외</span><span class="v">${Math.floor(r.shiftOtMin/60)}시간<small>${r.shiftOtMin%60 ? `합계 ${hmKo(r.shiftOtMin)} → 1시간 미만 절삭` : '절삭 없음'}</small></span></div>
       <div class="sumrow"><span class="k">야간</span><span class="v">${r.nightH}시간${r.night%60 ? `<small>합계 ${hmKo(r.night)} → 1시간 미만 절삭</small>` : ''}</span></div>
       <div class="sumrow"><span class="k">휴일</span><span class="v">${r.holDays}일</span></div>
-    </div>`;
-    html += `<div class="sumbox" style="margin-top:10px">
-      <div class="sumrow"><span class="k">시간외근무수당</span><span class="v">${won(r.pOT)}<small>${hrs(r.ot)}h × ${won(R.ot)}</small></span></div>
-      ${r.shiftDays ? `<div class="sumrow"><span class="k">야간근무수당</span><span class="v">${won(r.pN)}<small>${hrs(r.nightH)}h × ${won(R.night)}</small></span></div>
-      <div class="sumrow"><span class="k">휴일근무수당</span><span class="v">${won(r.pH)}<small>${r.holDays}일 × ${won(R.hol)}</small></span></div>` : ''}
-      ${r.dutyN ? `<div class="sumrow"><span class="k">당직비</span><span class="v">${won(r.pDuty)}<small>${r.dutyN}회</small></span></div>` : ''}
-      <div class="total"><span style="font-weight:700">합계 (세전)</span><span class="v">${won(r.total)}</span></div>
     </div>`;
     if (!R.exact) html += `<div class="warn">${viewY}년 단가표가 아직 반영되지 않아 ${R.year}년 단가로 계산했어요.</div>`;
     html += `<p class="note">${R.year}년 ${R.rank} 단가 기준 참고용 추정치예요. 시간외·야간은 월 합계에서 1시간 미만을 절삭했어요.</p>`;
@@ -1202,7 +1215,7 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.8 베타';
+  const APP_VERSION = 'v0.9.9 베타';
   // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   $('#btnFeedback').addEventListener('click', async () => {

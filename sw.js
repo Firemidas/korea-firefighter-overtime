@@ -1,5 +1,5 @@
 // 앱 버전을 올리면 캐시가 새로 만들어집니다 (index.html의 APP_VERSION과 같이 바꿔주세요)
-const CACHE = 'ot-calc-v0.9.8';
+const CACHE = 'ot-calc-v0.9.9';
 const ASSETS = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon-180.png', './guide.html'];
 
