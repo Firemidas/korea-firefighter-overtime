@@ -300,12 +300,14 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
     </div>
   </div>
 
+  <div id="ilBox">
   <h3>일근 · 당직</h3>
   <div class="row"><label>시간외 정액분<span class="hint">월 15일 이상 출근 시 10시간</span></label><div class="seg" id="fixedSeg"><button data-v="1">포함</button><button data-v="0">제외</button></div></div>
   <div class="row"><label>평일 숙직비<span class="hint">원 / 1회</span></label><input type="number" id="dutyWS" inputmode="numeric"></div>
   <div class="row"><label>휴일 일직비<span class="hint">원 / 1회</span></label><input type="number" id="dutyHI" inputmode="numeric"></div>
   <div class="row"><label>휴일 숙직비<span class="hint">원 / 1회</span></label><input type="number" id="dutyHS" inputmode="numeric"></div>
   <p class="note" style="margin:6px 0 0">당직비는 시·도마다 달라요. 소속 기관 금액으로 맞춰주세요. 일근 시간외는 월 57시간까지 인정돼요.</p>
+  </div>
 
   <h3>계급 · 단가</h3>
   <div class="row"><label>계급<span class="hint" id="rankHint"></span></label>
@@ -326,11 +328,11 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
       · 시간외 = 월 총 근무시간 − 평일수×8h − 휴일수당 일수×8h (시간외·야간 모두 월 합계 1시간 미만 절삭)<br>
       · 휴일수당 1일: 휴일 09~18시를 모두 근무한 날 (당번·주간·주간보근)<br>
       · 야간 8h: 22~06시가 포함된 근무 (당번·야간·야간보근)<br>
-      <b>[일근]</b><br>
+      <span id="ilRule"><b>[일근]</b><br>
       · 평일: 08시 전 출근하면 08시 전 시간 + 18시 이후 전부 인정 (08~09시 1시간 공제). 08시 이후 출근하면 18시 이후에서 1시간 공제<br>
       · 휴일 근무는 공제 없이 전부 시간외. 야간·휴일수당, 공동근무 없음<br>
       · 정액분 10시간(월 15일 이상 출근) 포함, 월 57시간 상한, 1시간 미만 절삭<br>
-      · 당직비: 평일 숙직 / 휴일 일직·숙직 1회 금액
+      · 당직비: 평일 숙직 / 휴일 일직·숙직 1회 금액</span>
     </p>
   </details>
 
@@ -897,6 +899,10 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   function renderSettings(){
     const s = state.settings, p = pat();
     setSeg($('#patSeg'), s.pattern);
+    // 일근 설정은 근무 방식이 일근일 때(또는 일근으로 바뀌는 변경 내역이 있을 때)만 표시
+    const usesIl = p.il || (s.transfers||[]).some(t => PATTERNS[t.pattern]?.il);
+    $('#ilBox').style.display = usesIl ? '' : 'none';
+    $('#ilRule').style.display = usesIl ? '' : 'none';
     document.querySelectorAll('#setSheet .shiftonly').forEach(r => r.style.display = p.il ? 'none' : '');
     $('#anchorNote').style.display = p.il ? 'none' : '';
     setSeg($('#fixedSeg'), s.fixedOn || '1');
@@ -1157,7 +1163,7 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.3 베타';
+  const APP_VERSION = 'v0.9.4 베타';
   $('#appVer').textContent = APP_VERSION;
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
