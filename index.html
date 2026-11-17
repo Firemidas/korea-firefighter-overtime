@@ -346,7 +346,13 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
       <button class="btn small ghost" id="btnReset" style="color:var(--red)">전체 초기화</button>
     </div>
   </details>
-  <p class="note" style="text-align:center;margin-top:16px">버전 <b id="appVer"></b> · 오류나 의견은 담당자에게 버전과 함께 알려주세요</p>
+  <h3>도움말 · 의견</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <a class="btn small" href="guide.html" target="_blank" rel="noopener" style="text-decoration:none">📖 사용 안내</a>
+    <button class="btn small primary" id="btnFeedback">✉️ 의견 보내기</button>
+  </div>
+  <p class="note" style="margin:6px 0 0">의견 보내기를 누르면 앱 버전·근무 방식 정보가 복사돼요. 접수 양식에 붙여넣어 주세요.</p>
+  <p class="note" style="text-align:center;margin-top:16px">버전 <b id="appVer"></b></p>
 </section>
 
 <!-- 통계 -->
@@ -1163,7 +1169,16 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.4 베타';
+  const APP_VERSION = 'v0.9.5 베타';
+  // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
+  const FEEDBACK_URL = '';
+  $('#btnFeedback').addEventListener('click', async () => {
+    const tk = key(now.getFullYear(), now.getMonth(), now.getDate()), c = cfgOf(tk);
+    const info = `[앱 정보] ${APP_VERSION} / ${PATTERNS[c.pattern].name}${PATTERNS[c.pattern].il ? '' : ' ' + c.team + '팀'} / ${rankOf(tk)} / ${/iPhone|iPad/.test(navigator.userAgent) ? '아이폰' : /Android/.test(navigator.userAgent) ? '안드로이드' : '기타'}`;
+    try { await navigator.clipboard.writeText(info); } catch(e){}
+    if (FEEDBACK_URL){ toast('앱 정보를 복사했어요. 양식에 붙여넣어 주세요'); setTimeout(() => window.open(FEEDBACK_URL, '_blank'), 600); }
+    else toast('의견 접수 양식을 준비 중이에요');
+  });
   $('#appVer').textContent = APP_VERSION;
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
