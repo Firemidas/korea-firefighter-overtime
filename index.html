@@ -169,15 +169,32 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
 .tritem{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px}
 .tritem span{color:var(--sub)}
 .tritem .del{border:none;background:none;color:var(--red);font-weight:700;font-size:13px}
+.installbar{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #fbd0cc;border-radius:14px;padding:8px 8px 8px 10px;margin:2px 0 8px;box-shadow:0 2px 8px rgba(217,45,32,.08)}
+.installbar[hidden]{display:none}
+.installbar img{width:34px;height:34px;border-radius:9px;flex:none}
+.installbar div{flex:1;min-width:0;line-height:1.3}
+.installbar b{display:block;font-size:13px}
+.installbar span{display:block;font-size:11px;color:var(--sub)}
+.ibclose{border:none;background:none;color:var(--sub);font-size:20px;padding:0 4px}
+.installbtn{border:none;background:var(--red);color:#fff;font-weight:800;font-size:12px;border-radius:999px;padding:6px 11px;white-space:nowrap;box-shadow:0 2px 6px rgba(217,45,32,.3)}
+.istep{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px;line-height:1.5}
+.istep:last-child{border-bottom:none}
+.istep .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+.ikey{display:inline-flex;vertical-align:middle;background:var(--gray-soft);border-radius:7px;padding:2px 4px}
 .chk{display:flex;align-items:center;gap:8px;font-size:14px}
 .chk input{width:20px;height:20px}
 </style>
 </head>
 <body>
 <div class="app">
+  <div class="installbar" id="installBar" hidden>
+    <img src="icons/icon-192.png" alt=""><div><b>홈 화면에 설치하세요</b><span>앱처럼 바로 열리고 기록도 안전해요</span></div>
+    <button class="installbtn" id="btnInstall">📲 설치</button>
+    <button class="ibclose" id="ibClose" aria-label="닫기">×</button>
+  </div>
   <header>
     <h1><span class="dot"></span>나의소방근무노트</h1>
-    <span style="display:flex;align-items:center;gap:6px"><span class="beta">BETA</span><span class="teamtag" id="teamTag"></span></span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="beta" id="betaTag">BETA</span><span class="teamtag" id="teamTag"></span></span>
   </header>
 
   <div class="actions">
@@ -226,6 +243,13 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
 </div>
 
 <div class="scrim" id="scrim"></div>
+
+<!-- 홈 화면 설치 안내 -->
+<section class="sheet" id="installSheet" aria-label="홈 화면에 설치">
+  <div class="grab"></div>
+  <h2>홈 화면에 설치하기<button class="x" data-close>×</button></h2>
+  <div id="installBody"></div>
+</section>
 
 <!-- 연·월 이동 -->
 <section class="sheet" id="navSheet" aria-label="연·월 선택">
@@ -331,6 +355,7 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
       <span id="ilRule"><b>[일근]</b><br>
       · 평일: 08시 전 출근하면 08시 전 시간 + 18시 이후 전부 인정 (08~09시 1시간 공제). 08시 이후 출근하면 18시 이후에서 1시간 공제<br>
       · 휴일 근무는 공제 없이 전부 시간외. 야간·휴일수당, 공동근무 없음<br>
+      · 그날 시간외가 1시간 미만이면 그날은 산입하지 않음 (규정 제15조⑤)<br>
       · 정액분 10시간(월 15일 이상 출근) 포함, 월 57시간 상한, 1시간 미만 절삭<br>
       · 당직비: 평일 숙직 / 휴일 일직·숙직 1회 금액</span>
     </p>
@@ -385,13 +410,13 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   // ===== 연도별 단가표 (원) — 시간외·야간: 1시간 / 휴일: 1일 =====
   // 근거: 공무원수당 등에 관한 규정 별표 12(기준호봉: 소방사 9호봉, 소방교 이상 10호봉)
   //       × 공무원보수규정 별표 10(경찰·소방 봉급표) 해당 연도 봉급액
-  // 봉급기준액 = 기준호봉 봉급 × 55%  /  시간외 = 기준액÷209×150%  /  야간 = 기준액÷209×50%  /  휴일 = 기준액÷26×150%
+  // 봉급기준액 = 기준호봉 봉급 × 55% (8급 상당 이하는 60% — 2026 소방사·소방교 적용, 명세서 확인 완료)  /  시간외 = 기준액÷209×150%  /  야간 = 기준액÷209×50%  /  휴일 = 기준액÷26×150%
   const RATES = {
     2024: { '소방사':[9609,3203,77242], '소방교':[10821,3607,86980], '소방장':[12133,4044,97528],
             '소방위':[12926,4309,103902], '소방경':[14148,4716,113726], '소방령':[15909,5303,127885] },
     2025: { '소방사':[9897,3299,79559], '소방교':[11145,3715,89589], '소방장':[12497,4166,100453],
             '소방위':[13313,4438,107018], '소방경':[14572,4857,117137], '소방령':[16386,5462,131721] },
-    2026: { '소방사':[10244,3415,82345], '소방교':[11535,3845,92724], '소방장':[12934,4311,103969],
+    2026: { '소방사':[11175,3725,89830], '소방교':[12584,4195,101153], '소방장':[12934,4311,103969],
             '소방위':[13779,4593,110763], '소방경':[15082,5027,121237], '소방령':[16960,5653,136331] }
   };
 
@@ -549,8 +574,15 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   }
 
   // 일근 초과근무 인정시간(분): 평일 08시 전 출근이면 08시 전+18시 이후, 아니면 18시 이후−1시간. 휴일은 전부
+  // 규정(공무원수당 규정 제15조⑤2호): 그날 시간외근무시간이 1시간 미만이면 더하지 않음
+  function ilRaw(from, to, hol){
+    let a = toMin(from), b = toMin(to); if (b <= a) b += 1440;
+    if (hol) return b - a;
+    return Math.max(0, 540 - a) + Math.max(0, b - Math.max(a, 1080));
+  }
   function ilMinutes(from, to, hol){
     let a = toMin(from), b = toMin(to); if (b <= a) b += 1440;
+    if (ilRaw(from, to, hol) < 60) return 0;
     if (hol) return b - a;
     const evening = Math.max(0, b - Math.max(a, 1080));
     if (a < 480) return (480 - a) + evening;
@@ -834,7 +866,8 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
       if (it.type==='extra' && it.sub==='ilTime'){
         tag = '초과근무';
         fields = `<div class="frow"><span class="tpl">시작</span>${tpHtml('from', it.from)}</div><div class="frow"><span class="tpl">종료</span>${tpHtml('to', it.to)}</div>`;
-        desc = `인정 ${hmKo(it.from && it.to ? ilMinutes(it.from, it.to, hol) : 0)}` + (hol ? ' (휴일, 공제 없음)' : '');
+        const raw = it.from && it.to ? ilRaw(it.from, it.to, hol) : 0;
+        desc = raw < 60 ? `인정 0분 (그날 시간외 1시간 미만이라 제외)` : `인정 ${hmKo(ilMinutes(it.from, it.to, hol))}` + (hol ? ' (휴일, 공제 없음)' : '');
       } else if (it.type==='extra' && il){
         tag = '초과근무';
         fields = `<div class="frow">인정 ${hmInputs('min', it.min)}</div>`;
@@ -1169,7 +1202,7 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.6 베타';
+  const APP_VERSION = 'v0.9.8 베타';
   // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   $('#btnFeedback').addEventListener('click', async () => {
@@ -1183,6 +1216,45 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
+
+  // ===== 홈 화면 설치 버튼 =====
+  const UA = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(UA);
+  const inKakao = /KAKAOTALK/i.test(UA);
+  const inApp = inKakao || /NAVER|Instagram|FBAN|FBAV|Line\//i.test(UA);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isSafari = isIOS && /Safari/.test(UA) && !/CriOS|FxiOS|EdgiOS|NAVER|KAKAOTALK/i.test(UA);
+  let deferredPrompt = null;
+  const SHARE_ICON = '<span class="ikey"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10H6v11h12V10h-2M12 15V3M8 7l4-4 4 4"/></svg></span>';
+  const PLUS_ICON = '<span class="ikey"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1c1f24" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span>';
+  const DOTS = '<span class="ikey" style="font-weight:900;padding:0 7px">⋮</span>';
+  let ibHidden = false; try { ibHidden = sessionStorage.getItem('ib-hide') === '1'; } catch(e){}
+  function showInstallBtn(){ if (!isStandalone && !ibHidden) $('#installBar').hidden = false; }
+  $('#ibClose').addEventListener('click', () => { $('#installBar').hidden = true; try { sessionStorage.setItem('ib-hide','1'); } catch(e){} });
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; showInstallBtn(); });
+  window.addEventListener('appinstalled', () => { $('#installBar').hidden = true; deferredPrompt = null; toast('설치됐어요! 홈 화면의 근무 아이콘으로 실행하세요'); });
+  if (!isStandalone && (isIOS || isAndroid || inApp)) showInstallBtn();
+  function steps(list){ return list.map((t,i) => `<div class="istep"><span class="n">${i+1}</span><div>${t}</div></div>`).join(''); }
+  $('#btnInstall').addEventListener('click', async () => {
+    if (deferredPrompt){ deferredPrompt.prompt(); const r = await deferredPrompt.userChoice.catch(() => null); deferredPrompt = null; if (r && r.outcome !== 'accepted') toast('나중에 다시 설치할 수 있어요'); return; }
+    let html;
+    if (inApp){
+      const ext = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href.split('#')[0]);
+      html = `<p class="note" style="margin:4px 0 10px">카카오톡 등 앱 안의 브라우저에서는 설치할 수 없어요. ${isIOS ? '<b>사파리</b>' : '<b>크롬</b>'}로 열어서 설치해 주세요.</p>`
+        + (inKakao ? `<a class="btn primary" href="${ext}" style="text-decoration:none;margin-bottom:10px">${isIOS ? '사파리' : '기본 브라우저'}로 열기</a>` : '')
+        + steps(isIOS ? ['오른쪽 아래 메뉴 → <b>Safari로 열기</b>', `사파리에서 아래쪽 ${SHARE_ICON} <b>공유</b> 누르기`, `${PLUS_ICON} <b>홈 화면에 추가</b> → <b>추가</b>`]
+                      : [`오른쪽 위 ${DOTS} → <b>다른 브라우저로 열기</b> (크롬)`, `크롬에서 다시 <b>📲 홈 화면에 설치</b> 누르기`]);
+    } else if (isIOS){
+      html = (isSafari ? '' : '<p class="note" style="margin:4px 0 10px">아이폰은 <b>사파리</b>에서만 설치돼요. 주소를 복사해 사파리에서 열어주세요.</p>')
+        + steps([`화면 아래쪽 ${SHARE_ICON} <b>공유</b> 버튼 누르기<br><small style="color:var(--sub)">안 보이면 화면을 살짝 위로 올려보세요</small>`, `목록을 내려 ${PLUS_ICON} <b>홈 화면에 추가</b> 누르기`, '오른쪽 위 <b>추가</b> 누르면 끝!']);
+    } else {
+      html = steps([`크롬 오른쪽 위 ${DOTS} 메뉴 누르기`, `${PLUS_ICON} <b>앱 설치</b> 또는 <b>홈 화면에 추가</b> 누르기`, '<b>설치</b>를 누르면 홈 화면에 아이콘이 생겨요']);
+    }
+    html += '<p class="note" style="margin:12px 0 0">설치 후에는 홈 화면의 빨간 <b>근무</b> 아이콘으로만 사용하세요. 기록은 그 앱에 저장돼요.</p>';
+    $('#installBody').innerHTML = html;
+    openSheet('#installSheet');
+  });
 
   // ===== 시작 =====
   $('#prev').addEventListener('click', () => { if (--viewM < 0){ viewM = 11; viewY--; } render(); });
