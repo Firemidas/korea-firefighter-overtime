@@ -138,7 +138,7 @@ kbd{font-family:inherit;background:var(--bg);border:1px solid var(--line);border
 </div>
 <script>
   // 의견 접수 양식 주소 — 앱(index.html)의 FEEDBACK_URL과 같게 맞춰주세요
-  const FEEDBACK_URL = '';
+  const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   const b = document.getElementById('fbBtn');
   if (FEEDBACK_URL) { b.href = FEEDBACK_URL; b.target = '_blank'; b.rel = 'noopener'; }
   else { b.textContent = '의견 접수 양식 준비 중'; b.style.opacity = .5; b.removeAttribute('href'); }

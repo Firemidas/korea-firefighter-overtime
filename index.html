@@ -125,7 +125,7 @@ header h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
 .item .fields input[type=number]{width:72px;text-align:right}
 .sumbox{background:var(--gray-soft);border-radius:14px;padding:14px;margin-top:6px}
 .sumrow{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;gap:10px}
-.sumrow .k{color:var(--sub)}
+.sumrow .k{color:var(--sub);flex:none}
 .sumrow .v{font-weight:700;text-align:right}
 .sumrow .v small{display:block;font-weight:400;color:var(--sub);font-size:11px}
 .total{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--ink);margin-top:8px;padding-top:10px}
@@ -1169,9 +1169,9 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.5 베타';
+  const APP_VERSION = 'v0.9.6 베타';
   // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
-  const FEEDBACK_URL = '';
+  const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   $('#btnFeedback').addEventListener('click', async () => {
     const tk = key(now.getFullYear(), now.getMonth(), now.getDate()), c = cfgOf(tk);
     const info = `[앱 정보] ${APP_VERSION} / ${PATTERNS[c.pattern].name}${PATTERNS[c.pattern].il ? '' : ' ' + c.team + '팀'} / ${rankOf(tk)} / ${/iPhone|iPad/.test(navigator.userAgent) ? '아이폰' : /Android/.test(navigator.userAgent) ? '안드로이드' : '기타'}`;
