@@ -33,7 +33,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin:4px 
 header h1{font-size:17px;margin:0;font-weight:800;display:flex;align-items:center;gap:6px;white-space:nowrap}
 header h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
 .teamtag{font-size:12px;color:var(--sub);margin:2px 0 0 16px;white-space:nowrap}
-.actions{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px;margin-bottom:10px}
+.actions{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px;margin-top:10px}
 .actions .btn{padding:12px 6px;font-size:14px}
 .st-hero{margin:10px 0 4px}
 .st-hero .lbl{font-size:12px;color:var(--sub)}
@@ -249,6 +249,16 @@ color-scheme:dark;
       </span>
   </header>
 
+  <div class="monthbar">
+    <button class="navbtn" id="prev" aria-label="이전 달">‹</button>
+    <button class="m mbtn" id="monthLabel" aria-label="연·월 선택"></button>
+    <button class="navbtn" id="next" aria-label="다음 달">›</button>
+  </div>
+  <div class="cal">
+    <div class="wk"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
   <div class="actions">
     <button class="btn" id="btnSettings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -262,16 +272,6 @@ color-scheme:dark;
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M14 10h2M8 14h2M14 14h2M8 18h2M14 18h2"/></svg>
       <span>예상 수당 확인</span>
     </button>
-  </div>
-
-  <div class="monthbar">
-    <button class="navbtn" id="prev" aria-label="이전 달">‹</button>
-    <button class="m mbtn" id="monthLabel" aria-label="연·월 선택"></button>
-    <button class="navbtn" id="next" aria-label="다음 달">›</button>
-  </div>
-  <div class="cal">
-    <div class="wk"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-    <div class="grid" id="grid"></div>
   </div>
 
   <div class="legend">
@@ -847,7 +847,7 @@ color-scheme:dark;
   // 달력이 화면 아래까지 꽉 차도록 줄 높이 계산 (내용이 많은 줄은 더 늘어남)
   function fitGrid(){
     const g = $('#grid'), rows = Math.max(1, g.children.length / 7);
-    const below = $('.legend').offsetHeight + 34; // 범례 + 아래 여백
+    const below = $('.actions').offsetHeight + 10 + $('.legend').offsetHeight + 34; // 아래 버튼 + 범례 + 여백
     const avail = window.innerHeight - g.getBoundingClientRect().top - window.scrollY - below;
     g.style.setProperty('--rowh', Math.max(76, Math.floor(avail / rows)) + 'px');
   }
@@ -1339,7 +1339,7 @@ color-scheme:dark;
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.12 베타';
+  const APP_VERSION = 'v0.9.13 베타';
   // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   $('#btnFeedback').addEventListener('click', async () => {
@@ -1370,7 +1370,7 @@ color-scheme:dark;
   function showInstallBtn(){ if (!isStandalone && !ibHidden){ $('#installBar').hidden = false; fitGrid(); } }
   $('#ibClose').addEventListener('click', () => { $('#installBar').hidden = true; fitGrid(); try { sessionStorage.setItem('ib-hide','1'); } catch(e){} });
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; showInstallBtn(); });
-  window.addEventListener('appinstalled', () => { $('#installBar').hidden = true; deferredPrompt = null; toast('설치됐어요! 홈 화면의 근무 아이콘으로 실행하세요'); });
+  window.addEventListener('appinstalled', () => { $('#installBar').hidden = true; deferredPrompt = null; toast('설치됐어요! 홈 화면의 안전 아이콘으로 실행하세요'); });
   if (!isStandalone && (isIOS || isAndroid || inApp)) showInstallBtn();
   function steps(list){ return list.map((t,i) => `<div class="istep"><span class="n">${i+1}</span><div>${t}</div></div>`).join(''); }
   $('#btnInstall').addEventListener('click', async () => {
@@ -1388,7 +1388,7 @@ color-scheme:dark;
     } else {
       html = steps([`크롬 오른쪽 위 ${DOTS} 메뉴 누르기`, `${PLUS_ICON} <b>앱 설치</b> 또는 <b>홈 화면에 추가</b> 누르기`, '<b>설치</b>를 누르면 홈 화면에 아이콘이 생겨요']);
     }
-    html += '<p class="note" style="margin:12px 0 0">설치 후에는 홈 화면의 빨간 <b>근무</b> 아이콘으로만 사용하세요. 기록은 그 앱에 저장돼요.</p>';
+    html += '<p class="note" style="margin:12px 0 0">설치 후에는 홈 화면의 빨간 <b>안전</b> 아이콘으로만 사용하세요. 기록은 그 앱에 저장돼요.</p>';
     $('#installBody').innerHTML = html;
     openSheet('#installSheet');
   });
