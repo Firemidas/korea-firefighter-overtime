@@ -33,8 +33,8 @@ header{display:flex;align-items:center;justify-content:space-between;margin:4px 
 header h1{font-size:17px;margin:0;font-weight:800;display:flex;align-items:center;gap:6px;white-space:nowrap}
 header h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
 .teamtag{font-size:12px;color:var(--sub);margin:2px 0 0 16px;white-space:nowrap}
-.actions{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px;margin-top:10px}
-.actions .btn{padding:12px 6px;font-size:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr 2fr;gap:6px;margin-top:10px}
+.actions .btn{flex-direction:column;gap:3px;padding:9px 4px;font-size:13px;white-space:nowrap}
 .st-hero{margin:10px 0 4px}
 .st-hero .lbl{font-size:12px;color:var(--sub)}
 .st-hero .big{font-size:26px;font-weight:800}
@@ -191,7 +191,21 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
 .istep .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--red);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
 .ikey{display:inline-flex;vertical-align:middle;background:var(--gray-soft);border-radius:7px;padding:2px 4px}
 .chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.shiftbox{margin-top:14px}
+.shiftbox summary{font-size:14px;color:var(--sub)}
+.shiftbox summary span{font-weight:400;font-size:11px;margin-left:6px}
 .chk input{width:20px;height:20px}
+.lawsearch{display:flex;gap:6px;margin:8px 0 4px}
+.lawsearch input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--field);color:var(--ink)}
+.lawgrp{font-size:13px;color:var(--sub);font-weight:700;margin:16px 0 6px}
+.lawlink{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;text-decoration:none;color:var(--ink);font-size:14px;font-weight:600}
+.lawlink small{display:block;font-weight:400;font-size:11px;color:var(--sub);margin-top:1px}
+.lawlink::after{content:'›';color:var(--sub);font-size:18px}
+@keyframes slideL{from{transform:translateX(18%);opacity:.3}to{transform:none;opacity:1}}
+@keyframes slideR{from{transform:translateX(-18%);opacity:.3}to{transform:none;opacity:1}}
+.grid.slide-l{animation:slideL .22s ease}
+.grid.slide-r{animation:slideR .22s ease}
+.cal{touch-action:pan-y}
 
 /* ===== 화면 모드: 상단에서 화이트/다크 선택 (선택 전에는 휴대폰 설정을 따름) ===== */
 :root[data-theme="light"]{color-scheme:light}
@@ -268,6 +282,10 @@ color-scheme:dark;
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
       통계
     </button>
+    <button class="btn" id="btnLaw">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5zM4 20.5A1.5 1.5 0 0 0 5.5 22H20M8 7h8M8 11h6"/></svg>
+      법령
+    </button>
     <button class="btn" id="btnCalc">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M14 10h2M8 14h2M14 14h2M8 18h2M14 18h2"/></svg>
       <span>예상 수당 확인</span>
@@ -315,14 +333,6 @@ color-scheme:dark;
 <section class="sheet" id="daySheet" aria-label="날짜 입력">
   <div class="grab"></div>
   <h2><span id="dayTitle"></span><button class="x" data-close>×</button></h2>
-  <div class="row">
-    <label>근무 구분<span class="hint" id="shiftHint"></span></label>
-    <div class="seg" id="shiftSeg"></div>
-  </div>
-  <div class="row">
-    <label>휴일 구분<span class="hint" id="holHint"></span></label>
-    <div class="seg" id="holSeg"><button data-v="auto">자동</button><button data-v="1">휴일</button><button data-v="0">평일</button></div>
-  </div>
   <h3 style="display:flex;justify-content:space-between;align-items:center">복무 상황<button class="btn small" id="copyPrev" style="padding:5px 10px;font-size:12px;font-weight:700">전날 입력 복사</button></h3>
   <div class="addgrid">
     <button class="add extra" id="addExtra">초과근무</button>
@@ -336,12 +346,23 @@ color-scheme:dark;
   </div>
   <div class="picker" id="extraPicker"></div>
   <div id="items" style="margin-top:12px"></div>
+  <h3>메모</h3>
+  <textarea id="dayMemo" class="memo" placeholder="개인 메모" maxlength="500"></textarea>
   <h3>출동 수당</h3>
   <div class="row"><label class="chk"><input type="checkbox" id="snackChk"> 야간출동간식비</label><span class="hint" style="font-size:12px;color:var(--sub)">5,000원</span></div>
   <div class="row"><label>출동가산금<span class="hint">3건 공제 후 지급받는 출동건수</span></label>
     <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub)"><input type="number" id="sortieN" min="0" step="1" inputmode="numeric" placeholder="0" style="width:80px;text-align:right;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:16px"> 건 × 4,000원</span></div>
-  <h3>메모</h3>
-  <textarea id="dayMemo" class="memo" placeholder="개인 메모 (예: 화재 출동, 교육 준비물 등)" maxlength="500"></textarea>
+  <details id="shiftBox" class="shiftbox">
+    <summary>근무·휴일 바꾸기<span>근무 교환·임시공휴일일 때만</span></summary>
+    <div class="row">
+      <label>근무 구분<span class="hint" id="shiftHint"></span></label>
+      <div class="seg" id="shiftSeg"></div>
+    </div>
+    <div class="row">
+      <label>휴일 구분<span class="hint" id="holHint"></span></label>
+      <div class="seg" id="holSeg"><button data-v="auto">자동</button><button data-v="1">휴일</button><button data-v="0">평일</button></div>
+    </div>
+  </details>
   <div class="okbar"><button class="btn" id="dayCancel">취소</button><button class="btn primary" id="dayOk">확인</button></div>
 </section>
 
@@ -437,6 +458,18 @@ color-scheme:dark;
   <h2>통계<button class="x" data-close>×</button></h2>
   <div class="seg" id="stMode" style="justify-content:stretch;display:grid;grid-template-columns:1fr 1fr;margin-top:6px"><button data-v="month">월별 (1년)</button><button data-v="year">연도별 비교</button></div>
   <div id="stBody"></div>
+</section>
+
+<!-- 법령·정보 -->
+<section class="sheet" id="lawSheet" aria-label="법령·정보">
+  <div class="grab"></div>
+  <h2>법령 · 정보<button class="x" data-close>×</button></h2>
+  <form id="lawForm" class="lawsearch" autocomplete="off">
+    <input type="search" id="lawQ" placeholder="법령 이름이나 키워드" enterkeyhint="search">
+    <button class="btn small primary" type="submit">검색</button>
+  </form>
+  <div id="lawList"></div>
+  <p class="note" style="margin:10px 0 0">누르면 법제처 국가법령정보센터의 <b>최신 원문</b>이 열려요. 인터넷 연결이 필요해요.</p>
 </section>
 
 <!-- 예상 수당 -->
@@ -837,7 +870,7 @@ color-scheme:dark;
         if (dd?.sortie) html += `<span class="chip c-sortie">출동 ${dd.sortie}건</span>`;
         const memo = (state.days[k]?.memo || '').trim();
         if (memo) html += `<span class="chip c-memo">✎ ${memo.replace(/[<>&]/g,'').slice(0,12)}</span>`;
-        b.addEventListener('click', () => openDay(k));
+        b.addEventListener('click', () => { if (Date.now() - swipeAt < 400) return; openDay(k); });
       } else b.disabled = true;
       b.innerHTML = html;
       g.appendChild(b);
@@ -895,6 +928,7 @@ color-scheme:dark;
     $('#shiftSeg').innerHTML = `<button data-v="auto">자동</button>` + p.cycle.map(c => `<button data-v="${c}">${SHIFT[c].name}</button>`).join('');
     setSeg($('#shiftSeg'), (d.shift && p.cycle.includes(d.shift)) ? d.shift : 'auto');
     setSeg($('#holSeg'), d.hol ?? 'auto');
+    $('#shiftBox').open = (d.shift && d.shift !== 'auto') || (d.hol !== undefined && d.hol !== 'auto');
     const a = autoShift(k);
     $('#shiftHint').textContent = a ? `자동: ${SHIFT[a].name}` : '기준 날짜를 설정하세요';
     $('#holHint').textContent = `자동: ${isAutoHoliday(k)?'휴일':'평일'}`;
@@ -1339,7 +1373,7 @@ color-scheme:dark;
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.13 베타';
+  const APP_VERSION = 'v0.9.14 베타';
   // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   $('#btnFeedback').addEventListener('click', async () => {
@@ -1410,6 +1444,71 @@ color-scheme:dark;
   sysDark.addEventListener?.('change', paintTheme);
   paintTheme();
 
+
+  // ===== 법령·정보 (법제처 국가법령정보센터 최신 원문으로 연결) =====
+  const LAW_BASE = 'https://www.law.go.kr';
+  const LAWS = [
+    ['수당 · 보수', [
+      ['공무원수당 등에 관한 규정', '/법령/공무원수당등에관한규정', '시간외·야간·휴일근무수당'],
+      ['공무원보수규정', '/법령/공무원보수규정', '봉급표'],
+      ['공무원보수 등의 업무지침', '/행정규칙/공무원보수등의업무지침', '인사혁신처 예규 · 수당 세부 기준'],
+      ['공무원 여비 규정', '/법령/공무원여비규정', '출장 여비']]],
+    ['복무 · 인사', [
+      ['소방공무원 복무규정', '/법령/소방공무원복무규정', ''],
+      ['국가공무원 복무규정', '/법령/국가공무원복무규정', '연가·병가·공가·특별휴가'],
+      ['소방공무원법', '/법령/소방공무원법', ''],
+      ['소방공무원 임용령', '/법령/소방공무원임용령', ''],
+      ['소방공무원 승진임용 규정', '/법령/소방공무원승진임용규정', ''],
+      ['소방공무원 교육훈련규정', '/법령/소방공무원교육훈련규정', ''],
+      ['소방공무원 징계령', '/법령/소방공무원징계령', '']]],
+    ['소방 업무', [
+      ['소방기본법', '/법령/소방기본법', ''],
+      ['화재의 예방 및 안전관리에 관한 법률', '/법령/화재의예방및안전관리에관한법률', ''],
+      ['소방시설 설치 및 관리에 관한 법률', '/법령/소방시설설치및관리에관한법률', ''],
+      ['119구조·구급에 관한 법률', '/LSW/lsSc.do?menuId=1&query=' + encodeURIComponent('119구조'), '검색 결과로 열려요'],
+      ['소방공무원 보건안전 및 복지 기본법', '/법령/소방공무원보건안전및복지기본법', '']]]
+  ];
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function renderLaws(){
+    $('#lawList').innerHTML = LAWS.map(([g, list]) => `<div class="lawgrp">${g}</div>` + list.map(([n, path, sub]) =>
+      `<a class="lawlink" href="${LAW_BASE + encodeURI(path).replace(/%25/g,'%')}" target="_blank" rel="noopener"><span>${esc(n)}${sub ? `<small>${esc(sub)}</small>` : ''}</span></a>`).join('')).join('');
+  }
+  function openLaw(){ renderLaws(); $('#lawQ').value = ''; openSheet('#lawSheet'); }
+  $('#btnLaw').addEventListener('click', openLaw);
+  $('#lawForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const q = $('#lawQ').value.trim(); if (!q){ toast('검색어를 넣어주세요'); return; }
+    window.open(LAW_BASE + '/LSW/lsSc.do?menuId=1&query=' + encodeURIComponent(q), '_blank', 'noopener');
+  });
+
+  // ===== 달력 좌우로 밀어 달 이동 =====
+  let swipeAt = 0;
+  (function(){
+    const cal = $('.cal'); let x0 = 0, y0 = 0, t0 = 0, on = false;
+    cal.addEventListener('touchstart', e => { if (e.touches.length !== 1) return; on = true; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }, {passive:true});
+    cal.addEventListener('touchend', e => {
+      if (!on) return; on = false;
+      const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - t0 > 800) return;
+      swipeAt = Date.now();
+      moveMonth(dx < 0 ? 1 : -1);
+    }, {passive:true});
+  })();
+  function moveMonth(step){
+    viewM += step; if (viewM < 0){ viewM = 11; viewY--; } if (viewM > 11){ viewM = 0; viewY++; }
+    render();
+    const g = $('#grid'); g.classList.remove('slide-l','slide-r'); void g.offsetWidth; g.classList.add(step > 0 ? 'slide-l' : 'slide-r');
+  }
+
+  // ===== 홈 화면 아이콘 바로가기 (?go=today|sum|law) =====
+  function handleGo(){
+    const go = new URLSearchParams(location.search).get('go'); if (!go) return;
+    history.replaceState(null, '', location.pathname);
+    if (go === 'today'){ viewY = now.getFullYear(); viewM = now.getMonth(); render(); openDay(key(viewY, viewM, now.getDate())); }
+    else if (go === 'sum') openSum();
+    else if (go === 'law') openLaw();
+  }
+
   // 숫자 칸을 누르면 0은 지워서 바로 입력되게
   document.addEventListener('focusin', e => {
     const t = e.target;
@@ -1417,8 +1516,8 @@ color-scheme:dark;
   });
 
   // ===== 시작 =====
-  $('#prev').addEventListener('click', () => { if (--viewM < 0){ viewM = 11; viewY--; } render(); });
-  $('#next').addEventListener('click', () => { if (++viewM > 11){ viewM = 0; viewY++; } render(); });
+  $('#prev').addEventListener('click', () => moveMonth(-1));
+  $('#next').addEventListener('click', () => moveMonth(1));
   $('#btnSettings').addEventListener('click', () => { renderSettings(); openSheet('#setSheet'); });
   $('#btnCalc').addEventListener('click', openSum);
 
@@ -1426,6 +1525,7 @@ color-scheme:dark;
   if (firstRun){ state.settings.anchorDate = key(now.getFullYear(), now.getMonth(), now.getDate()); }
   save(); render();
   if (firstRun) setTimeout(() => { renderSettings(); openSheet('#setSheet'); toast('오늘 내 근무와 계급을 먼저 설정하세요'); }, 400);
+  else setTimeout(handleGo, 300);
 })();
 </script>
 </body>
