@@ -68,6 +68,8 @@ header h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
 .btn svg{width:18px;height:18px}
 .monthbar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:14px 14px 0 0;padding:10px 6px;border:1px solid var(--line);border-bottom:none}
 .monthbar .m{font-size:18px;font-weight:800}
+.mwrap{display:flex;align-items:center;gap:2px}
+.sumbtn{border:1px solid var(--line);background:var(--gray-soft);color:var(--ink);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700}
 .navbtn{border:none;background:var(--gray-soft);width:38px;height:38px;border-radius:10px;font-size:18px}
 .cal{background:var(--card);border:1px solid var(--line);border-radius:0 0 14px 14px;overflow:hidden}
 .wk{display:grid;grid-template-columns:repeat(7,1fr);font-size:12px;color:var(--sub);text-align:center;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -195,6 +197,15 @@ textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:1
 .shiftbox summary{font-size:14px;color:var(--sub)}
 .shiftbox summary span{font-weight:400;font-size:11px;margin-left:6px}
 .chk input{width:20px;height:20px}
+.msum{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 12px}
+.msum span{font-size:12px;font-weight:700;background:var(--gray-soft);border-radius:999px;padding:4px 9px}
+.mrow{display:flex;gap:10px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);padding:10px 2px;color:var(--ink)}
+.mrow:last-child{border-bottom:none}
+.mrow .d{flex:none;width:62px;font-size:13px;font-weight:700}
+.mrow .d.hol{color:var(--red)} .mrow .d.sat{color:var(--blue)}
+.mrow .c{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.mrow .c .chip{font-size:11px;white-space:normal}
+.mrow .memo-t{width:100%;font-size:12px;color:var(--sub);margin-top:2px;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 .lawsearch{display:flex;gap:6px;margin:8px 0 4px}
 .lawsearch input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--field);color:var(--ink)}
 .lawgrp{font-size:13px;color:var(--sub);font-weight:700;margin:16px 0 6px}
@@ -265,7 +276,7 @@ color-scheme:dark;
 
   <div class="monthbar">
     <button class="navbtn" id="prev" aria-label="이전 달">‹</button>
-    <button class="m mbtn" id="monthLabel" aria-label="연·월 선택"></button>
+    <span class="mwrap"><button class="m mbtn" id="monthLabel" aria-label="연·월 선택"></button><button class="sumbtn" id="btnMonth">요약</button></span>
     <button class="navbtn" id="next" aria-label="다음 달">›</button>
   </div>
   <div class="cal">
@@ -458,6 +469,16 @@ color-scheme:dark;
   <h2>통계<button class="x" data-close>×</button></h2>
   <div class="seg" id="stMode" style="justify-content:stretch;display:grid;grid-template-columns:1fr 1fr;margin-top:6px"><button data-v="month">월별 (1년)</button><button data-v="year">연도별 비교</button></div>
   <div id="stBody"></div>
+</section>
+
+<!-- 월 요약 -->
+<section class="sheet" id="monthSheet" aria-label="월 요약">
+  <div class="grab"></div>
+  <h2><span id="monthTitle"></span><button class="x" data-close>×</button></h2>
+  <div class="msum" id="monthSum"></div>
+  <div id="monthList"></div>
+  <button class="btn" id="monthCopy" style="width:100%;margin-top:12px">목록 복사</button>
+  <p class="note" style="margin:8px 0 0">줄을 누르면 그 날짜 입력창이 열려요. 입력한 내용이 있는 날만 보여요.</p>
 </section>
 
 <!-- 법령·정보 -->
@@ -1373,7 +1394,7 @@ color-scheme:dark;
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.14 베타';
+  const APP_VERSION = 'v0.9.15 베타';
   // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   $('#btnFeedback').addEventListener('click', async () => {
@@ -1479,6 +1500,70 @@ color-scheme:dark;
     e.preventDefault();
     const q = $('#lawQ').value.trim(); if (!q){ toast('검색어를 넣어주세요'); return; }
     window.open(LAW_BASE + '/LSW/lsSc.do?menuId=1&query=' + encodeURIComponent(q), '_blank', 'noopener');
+  });
+
+
+  // ===== 월 요약 (이달 복무 현황 목록) =====
+  let monthText = '';
+  function openMonth(){
+    const last = new Date(viewY, viewM+1, 0).getDate(), dows = '일월화수목금토';
+    const r = calcMonth(viewY, viewM);
+    const c = {bogeun:0, otMin:0, leave:{}, trip:0, edu:0, awayMin:0, duty:0, attend:0, il:false};
+    const rows = [], lines = [];
+    for (let d=1; d<=last; d++){
+      const k = key(viewY, viewM, d), dd = state.days[k] || {}, its = items(k), e = evalDay(k), w = parse(k).getDay();
+      if (e.il){ c.il = true; c.attend += e.attend; }
+      for (const it of its){
+        if (it.type==='extra'){
+          if (it.sub==='day' || it.sub==='night') c.bogeun++;
+          else c.otMin += it.sub==='ilTime' ? (it.from && it.to ? ilMinutes(it.from, it.to, isHoliday(k)) : 0) : num(it.min);
+        }
+        if (it.type==='leave'){ const n = it.kind==='당직휴무' ? '당직휴무' : (it.kind||'연가'); c.leave[n] = (c.leave[n]||0) + 1; }
+        if (it.type==='trip') c.trip++;
+        if (it.type==='edu') c.edu++;
+        if (it.type==='duty') c.duty++;
+        if (AWAY.includes(it.type) && it.from && it.to){ const [a,b] = awayRange(it, e.sh); c.awayMin += b - a; }
+      }
+      const changed = (dd.shift && dd.shift !== 'auto') || (dd.hol !== undefined && dd.hol !== 'auto');
+      const memo = (dd.memo || '').trim();
+      if (!its.length && !dd.snack && !dd.sortie && !memo && !changed) continue;
+      const labels = its.map(it => [ITEM_STYLE[it.type].cls, chipLabel(it, k)]);
+      if (dd.snack) labels.push(['c-sortie', '간식비']);
+      if (dd.sortie) labels.push(['c-sortie', `출동 ${dd.sortie}건`]);
+      const S = e.sh ? SHIFT[e.sh] : null;
+      const shiftTxt = S ? S.name + (changed ? '(변경)' : '') : '';
+      const dn = (HOLIDAYS[k] || w===0 || (isHoliday(k) && w!==6)) ? 'hol' : (w===6 ? 'sat' : '');
+      const dateTxt = `${viewM+1}/${d} (${dows[w]})`;
+      rows.push(`<button class="mrow" data-k="${k}"><span class="d ${dn}">${dateTxt}</span><span class="c">`
+        + (S ? `<span class="chip ${S.duty || S.il ? 'duty' : 'rest'}">${shiftTxt}</span>` : '')
+        + labels.map(([cls, t]) => `<span class="chip ${cls}">${esc(t)}</span>`).join('')
+        + (memo ? `<span class="memo-t">✎ ${esc(memo)}</span>` : '') + `</span></button>`);
+      lines.push(`${dateTxt} ${[shiftTxt, ...labels.map(x => x[1])].filter(Boolean).join(' · ')}${memo ? ` / 메모: ${memo.replace(/\s+/g,' ')}` : ''}`);
+    }
+    const sum = [];
+    if (r.shiftDays) sum.push(`근무 ${r.duty}회`);
+    if (c.il) sum.push(`출근 ${c.attend}일`);
+    if (c.bogeun) sum.push(`보근 ${c.bogeun}회`);
+    if (c.otMin) sum.push(`초과근무 ${hm(c.otMin)}`);
+    for (const [n, v] of Object.entries(c.leave)) sum.push(`${n} ${v}회`);
+    if (c.trip) sum.push(`출장 ${c.trip}회`);
+    if (c.edu) sum.push(`교육 ${c.edu}회`);
+    if (c.awayMin) sum.push(`조퇴·지각·외출 ${hm(c.awayMin)}`);
+    if (c.duty) sum.push(`당직 ${c.duty}회`);
+    if (r.snackDays) sum.push(`간식비 ${r.snackDays}일`);
+    if (r.sortieN) sum.push(`출동가산 ${r.sortieN}건`);
+    $('#monthTitle').textContent = `${viewY}년 ${viewM+1}월 복무 현황`;
+    $('#monthSum').innerHTML = sum.map(t => `<span>${t}</span>`).join('');
+    $('#monthList').innerHTML = rows.length ? rows.join('') : '<p class="note" style="margin:4px 2px">이달에 입력한 복무 상황이 없어요.</p>';
+    $('#monthList').querySelectorAll('.mrow').forEach(b => b.addEventListener('click', () => openDay(b.dataset.k)));
+    monthText = `[${viewY}년 ${viewM+1}월 복무 현황]\n${sum.join(' · ')}\n\n${lines.join('\n') || '입력한 복무 상황 없음'}`;
+    $('#monthCopy').style.display = rows.length ? '' : 'none';
+    openSheet('#monthSheet');
+  }
+  $('#btnMonth').addEventListener('click', openMonth);
+  $('#monthCopy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(monthText); toast('목록을 복사했어요'); }
+    catch(e){ toast('복사가 지원되지 않는 환경이에요'); }
   });
 
   // ===== 달력 좌우로 밀어 달 이동 =====
