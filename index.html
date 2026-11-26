@@ -585,6 +585,8 @@ color-scheme:dark;
   const RANKS = ['소방사','소방교','소방장','소방위','소방경','소방령'];
   const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(new Date(v + 'T00:00:00'));
   const isTime = v => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+  // 조퇴·지각·외출: 24:00 이상 = 익일 (익일 09시까지)
+  const isTimeX = v => typeof v === 'string' && /^([0-2]\d|3[0-3]):[0-5]\d$/.test(v);
   const clampN = (v, lo, hi) => { const n = Number(v); return isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
   function cleanItem(it){
     if (!it || typeof it !== 'object' || !ITEM_STYLE[it.type]) return null;
@@ -600,7 +602,7 @@ color-scheme:dark;
       o.kind = IL_LEAVE_KINDS.includes(it.kind) ? it.kind : '연가';
       o.part = LEAVE_PARTS[it.part] ? it.part : 'full';
     } else if (it.type === 'duty'){ o.kind = it.kind === 'iljik' ? 'iljik' : 'sukjik'; }
-    else if (AWAY.includes(it.type)){ if (!isTime(it.from) || !isTime(it.to)) return null; o.from = it.from; o.to = it.to; }
+    else if (AWAY.includes(it.type)){ if (!isTimeX(it.from) || !isTimeX(it.to)) return null; o.from = it.from; o.to = it.to; }
     return o;
   }
   function cleanState(obj){
@@ -719,12 +721,14 @@ color-scheme:dark;
     const d = state.days[k]; if (!d) return;
     if (!d.items.length && !(d.memo||'').trim() && !d.snack && !d.sortie && (!d.shift || d.shift==='auto') && (d.hol===undefined || d.hol==='auto')) delete state.days[k];
   }
-  // 조퇴·지각·외출 구간 (분). 근무 시작 전 시각은 다음 날로 봄
+  // 조퇴·지각·외출 구간 (분). 24:00 이상은 익일(직접 선택).
+  // 예전 기록(00~23시만): 근무 시작 전 시각은 다음 날로 봄
   function awayRange(it, sh){
     let a = toMin(it.from), b = toMin(it.to);
     const st = sh && SHIFT[sh].duty ? SHIFT[sh].start : 0;
-    if (a < st) a += 1440;
-    if (b <= a) b += 1440;
+    if (a < 1440 && a < st) a += 1440;
+    if (b < 1440 && b < a) b += 1440;
+    if (b < a) b = a;
     while (b - a > 1440) b -= 1440;
     return [a,b];
   }
@@ -1019,6 +1023,7 @@ color-scheme:dark;
     if (type==='leave'){ it.kind = '연가'; it.part = 'full'; }
     if (type==='duty') it.kind = isHoliday(curDate) ? 'iljik' : 'sukjik';
     if (AWAY.includes(type)){ it.from = ITEM_STYLE[type].def[0]; it.to = ITEM_STYLE[type].def[1]; }
+    if (type==='early' && ['D','Y'].includes(shiftOf(curDate))){ it.from = '32:00'; it.to = '33:00'; }  // 당번·야간 조퇴 기본: 익일 08~09시
     d.items.push(it);
     $('#extraPicker').classList.remove('show');
     dsave(); renderItems();
@@ -1037,6 +1042,16 @@ color-scheme:dark;
       <select data-tpm>${[0,10,20,30,40,50].map(m=>`<option value="${m}"${m===M?' selected':''}>${pad(m)}분</option>`).join('')}</select>
     </span>`;
   }
+  // 조퇴·지각·외출용: e-사람처럼 00~23시 + 익일 00~09시
+  function tpxHtml(f, min){
+    const H = Math.floor(min/60), M = min%60;
+    const hs = Array.from({length:34},(_,i)=>i); if (H > 33) hs.push(H);
+    return `<span class="tp" data-tpx="${f}">
+      <select data-tph>${hs.map(h=>`<option value="${h}"${h===H?' selected':''}>${h>=24?'익일 ':''}${pad(h%24)}시</option>`).join('')}</select>
+      <select data-tpm>${[0,10,20,30,40,50].map(m=>`<option value="${m}"${m===M?' selected':''}>${pad(m)}분</option>`).join('')}</select>
+    </span>`;
+  }
+  const awayFields = (a,b) => `<div class="frow"><span class="tpl">시작</span>${tpxHtml('from', a)}</div><div class="frow"><span class="tpl">종료</span>${tpxHtml('to', b)}</div>`;
   function readTp(el){
     const pm = el.querySelector('[data-ap="pm"]').classList.contains('on');
     let h = Number(el.querySelector('[data-tph]').value) % 12; if (pm) h += 12;
@@ -1088,12 +1103,13 @@ color-scheme:dark;
           : part==='night' ? (sh==='J' ? '주간 근무일 — 영향 없음' : '시간외 −7h · 야간 −8h')
           : (sh==='D' ? '시간외 −8h · 야간 −8h' : sh==='J' ? '시간외 −1h' : '시간외 −7h · 야간 −8h');
       } else if (AWAY.includes(it.type) && il){
-        fields = `<div class="frow"><span class="tpl">시작</span>${tpHtml('from', it.from)}</div><div class="frow"><span class="tpl">종료</span>${tpHtml('to', it.to)}</div>`;
+        const [a,b] = awayRange(it, sh);
+        fields = awayFields(a,b);
         desc = '기록용';
       } else if (AWAY.includes(it.type)){
-        fields = `<div class="frow"><span class="tpl">시작</span>${tpHtml('from', it.from)}</div><div class="frow"><span class="tpl">종료</span>${tpHtml('to', it.to)}</div>`;
+        const [a,b] = awayRange(it, sh);
+        fields = awayFields(a,b);
         if (it.from && it.to){
-          const [a,b] = awayRange(it, sh);
           desc = `근무 −${hmKo(b-a)}` + (isHoliday(curDate) && overlap(a,b,540,1080) > 0 ? ' · 휴일수당 제외' : '')
                + (it.type==='late' && toMin(it.to) > 540 && (S.duty || items(curDate).some(i=>i.sub==='day')) ? ' · 공동근무 제외' : '');
         }
@@ -1112,6 +1128,13 @@ color-scheme:dark;
         }));
         tp.querySelectorAll('select').forEach(sel => sel.addEventListener('change', upd));
       });
+      el.querySelectorAll('[data-tpx]').forEach(tp => tp.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => {
+        const v = Number(tp.querySelector('[data-tph]').value)*60 + Number(tp.querySelector('[data-tpm]').value);
+        const t = `${pad(Math.floor(v/60))}:${pad(v%60)}`;
+        const [a,b] = awayRange(it, sh);   // 다른 쪽 값도 지금 보이는 대로 고정
+        it.from = `${pad(Math.floor(a/60))}:${pad(a%60)}`; it.to = `${pad(Math.floor(b/60))}:${pad(b%60)}`;
+        it[tp.dataset.tpx] = t; dsave(); renderItems();
+      })));
       el.querySelectorAll('[data-hm]').forEach(inp => inp.addEventListener('input', () => {
         const f = inp.dataset.hm;
         const h = num(el.querySelector(`[data-hm="${f}"][data-u="h"]`).value);
@@ -1394,7 +1417,7 @@ color-scheme:dark;
   $('#btnStats').addEventListener('click', () => { stYear = Math.max(STAT_START, viewY); stMode = 'month'; renderStats(); openSheet('#statSheet'); });
 
   // ===== 앱 버전 · 오프라인 =====
-  const APP_VERSION = 'v0.9.15 베타';
+  const APP_VERSION = 'v0.9.16 베타';
   // 의견 접수 양식 주소 (구글 설문지 등) — guide.html의 FEEDBACK_URL과 같게
   const FEEDBACK_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSexlwjMHiLw73UxFj_btLAujstUwfH8NwuICIwLNGrCHAxzeg/viewform';
   $('#btnFeedback').addEventListener('click', async () => {
